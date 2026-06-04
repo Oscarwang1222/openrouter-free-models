@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updated": "2026-05-30T06:25:02Z",
+  "updated": "2026-06-04T14:42:28Z",
   "count": 19,
   "blocked_orgs": [
     "ai21",
@@ -41,14 +41,6 @@
       ]
     },
     {
-      "id": "deepseek/deepseek-v4-flash:free",
-      "name": "DeepSeek: DeepSeek V4 Flash (free)",
-      "context_length": 1048576,
-      "input_modalities": [
-        "text"
-      ]
-    },
-    {
       "id": "qwen/qwen3-coder:free",
       "name": "Qwen: Qwen3 Coder 480B A35B (free)",
       "context_length": 1048576,
@@ -65,17 +57,9 @@
       ]
     },
     {
-      "id": "poolside/laguna-xs.2:free",
-      "name": "Poolside: Laguna XS.2 (free)",
-      "context_length": 262144,
-      "input_modalities": [
-        "text"
-      ]
-    },
-    {
-      "id": "poolside/laguna-m.1:free",
-      "name": "Poolside: Laguna M.1 (free)",
-      "context_length": 262144,
+      "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
+      "name": "NVIDIA: Nemotron 3 Ultra (free)",
+      "context_length": 1000000,
       "input_modalities": [
         "text"
       ]
@@ -90,9 +74,33 @@
       ]
     },
     {
+      "id": "poolside/laguna-m.1:free",
+      "name": "Poolside: Laguna M.1 (free)",
+      "context_length": 262144,
+      "input_modalities": [
+        "text"
+      ]
+    },
+    {
+      "id": "poolside/laguna-xs.2:free",
+      "name": "Poolside: Laguna XS.2 (free)",
+      "context_length": 262144,
+      "input_modalities": [
+        "text"
+      ]
+    },
+    {
       "id": "qwen/qwen3-next-80b-a3b-instruct:free",
       "name": "Qwen: Qwen3 Next 80B A3B Instruct (free)",
       "context_length": 262144,
+      "input_modalities": [
+        "text"
+      ]
+    },
+    {
+      "id": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "name": "NVIDIA: Nemotron 3 Nano 30B A3B (free)",
+      "context_length": 256000,
       "input_modalities": [
         "text"
       ]
@@ -109,28 +117,20 @@
       ]
     },
     {
-      "id": "nvidia/nemotron-3-nano-30b-a3b:free",
-      "name": "NVIDIA: Nemotron 3 Nano 30B A3B (free)",
-      "context_length": 256000,
-      "input_modalities": [
-        "text"
-      ]
-    },
-    {
-      "id": "minimax/minimax-m2.5:free",
-      "name": "MiniMax: MiniMax M2.5 (free)",
-      "context_length": 204800,
-      "input_modalities": [
-        "text"
-      ]
-    },
-    {
       "id": "openrouter/free",
       "name": "Free Models Router",
       "context_length": 200000,
       "input_modalities": [
         "text",
         "image"
+      ]
+    },
+    {
+      "id": "nousresearch/hermes-3-llama-3.1-405b:free",
+      "name": "Nous: Hermes 3 405B Instruct (free)",
+      "context_length": 131072,
+      "input_modalities": [
+        "text"
       ]
     },
     {
@@ -142,11 +142,12 @@
       ]
     },
     {
-      "id": "nousresearch/hermes-3-llama-3.1-405b:free",
-      "name": "Nous: Hermes 3 405B Instruct (free)",
-      "context_length": 131072,
+      "id": "nvidia/nemotron-3.5-content-safety:free",
+      "name": "NVIDIA: Nemotron 3.5 Content Safety (free)",
+      "context_length": 128000,
       "input_modalities": [
-        "text"
+        "text",
+        "image"
       ]
     },
     {
@@ -168,8 +169,8 @@
       ]
     },
     {
-      "id": "liquid/lfm-2.5-1.2b-thinking:free",
-      "name": "LiquidAI: LFM2.5-1.2B-Thinking (free)",
+      "id": "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+      "name": "Venice: Uncensored (free)",
       "context_length": 32768,
       "input_modalities": [
         "text"
@@ -184,8 +185,8 @@
       ]
     },
     {
-      "id": "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
-      "name": "Venice: Uncensored (free)",
+      "id": "liquid/lfm-2.5-1.2b-thinking:free",
+      "name": "LiquidAI: LFM2.5-1.2B-Thinking (free)",
       "context_length": 32768,
       "input_modalities": [
         "text"
