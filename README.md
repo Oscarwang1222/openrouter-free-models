@@ -34,7 +34,7 @@
 
 ## 自动更新
 
-每日 12:00 (UTC+8) 通过 GitHub Actions 自动运行 `fetch_models.py` 并提交更新。
+每日 12:00 (UTC+8) 由本地 cron (`orfm_sync.sh`) 自动运行 `fetch_models.py` 并提交到 main 分支。
 
 如需手动更新：
 ```bash
