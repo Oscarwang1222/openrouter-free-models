@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """
-Fetch OpenRouter free models and generate models-global.json / models-cn.json.
+Fetch OpenRouter free models and generate:
+  - models-global.json      (free models, sorted by context length)
+  - models-cn.json          (free models accessible from CN, sorted by context length)
+  - models-strong-global.json  (free models, sorted strongest -> weakest)
+  - models-strong-cn.json      (free models accessible from CN, sorted strongest -> weakest)
 
 Output format matches Oscarwang1222/openrouter-free-models repo schema:
   { "version": "1.0", "updated": "...", "count": N, "models": [ ... ] }
@@ -9,6 +13,7 @@ Output directory: same directory as this script (so cron workdir is
 irrelevant — script always writes beside itself).
 """
 import json
+import re
 import sys
 import time
 import urllib.request
@@ -19,6 +24,8 @@ URL = "https://openrouter.ai/api/v1/models"
 OUT_DIR = Path(__file__).resolve().parent
 OUT_GLOBAL = OUT_DIR / "models-global.json"
 OUT_CN = OUT_DIR / "models-cn.json"
+OUT_STRONG_GLOBAL = OUT_DIR / "models-strong-global.json"
+OUT_STRONG_CN = OUT_DIR / "models-strong-cn.json"
 
 # Vendors excluded from the CN list. Conservative — when in doubt, drop
 # the model from the CN list and let the user decide whether to trust it.
@@ -28,6 +35,56 @@ BLOCKED_ORGS_CN = {
     "cohere", "mistralai", "meta-llama", "ai21", "stabilityai",
     "azure", "amazon", "x-ai", "x.ai",
 }
+
+# --- Strength ranking (heuristic; lower tier = stronger) -----------------
+# Tier 0: frontier-grade open weights (DeepSeek flagship, Qwen flagship,
+#          GLM-4.6+, Kimi K2, Llama 405B, Hermes 3 405B).
+# Tier 1: strong open weights 70B+ (DeepSeek-V3-lite, Qwen 72B, GLM-4,
+#          Llama 70B, Nemotron Ultra/Super, Poolside Laguna).
+# Tier 2: mid-size open weights 20B-32B (Nemotron Nano, Qwen 32B,
+#          Mistral-Large-class, Dolphin Mistral 24B, Venice).
+# Tier 3: small instruct models <20B (Llama 8B, Qwen 7B/14B,
+#          Mistral 7B, Nemotron Nano 9B/12B, GLM 4.5 Air).
+# Tier 4: tiny / specialised / router models (Liquid 1.2B, OpenRouter
+#          free router, content-safety classifiers).
+TIER_BY_ORG = {
+    "deepseek": 0,
+    "qwen": 0,
+    "z-ai": 0,
+    "moonshotai": 0,
+    "nousresearch": 1,  # mostly fine-tunes of strong base models
+    "meta-llama": 1,
+    "nvidia": 1,        # Nemotron Ultra/Super live here; Nano drops via params
+    "poolside": 1,
+    "nex-agi": 1,
+    "mistralai": 2,
+    "cognitivecomputations": 3,  # Dolphin fine-tunes
+    "liquid": 4,
+    "openrouter": 4,
+}
+
+# Model-name hints that bump a model up/down within its tier.
+# Each entry is (pattern_regex, delta) — delta is ADDED to the tier.
+TIER_HINTS = [
+    # Big boosters (move to tier 0)
+    (r"deepseek[-_]?(r1|v3|v4|chat)", 0),       # top DeepSeek variants → tier 0
+    (r"qwen3?[-_]?(?:max|plus|235b|480b)", 0),  # flagship Qwen → tier 0
+    (r"glm-?4\.?(?:6|5|plus)", 0),              # GLM 4.5+/Plus → tier 0
+    (r"kimi[-_]?k2", 0),                        # Kimi K2 → tier 0
+    (r"llama[-_]?3\.?1[-_]?405b", 0),           # Llama 3.1 405B → tier 0
+    # Big demoters (move to tier 4)
+    (r"content[-_]?safety", 3),                 # safety classifiers → tier 4
+    (r"free[-_]?router|router", 3),             # meta-router → tier 4
+    # Mid boosters (move to tier 1)
+    (r"nemotron[-_]?3[-_]?(?:ultra|super)", 0), # Nemotron flagship → tier 0
+    (r"nemotron[-_]?3[-_]?nano", 2),            # Nano line → tier 2
+    (r"laguna[-_]?(?:m|l|xl)", 0),              # Poolside flagship → tier 0
+    (r"dolphin", 2),                            # Dolphin → tier 2
+    (r"venice", 2),                             # Venice uncensored → tier 2
+    # Small model demoter
+    (r"1\.?[0-9]?b[-_]?(?:instruct|thinking)", 3),
+    (r"nano[-_]?(?:9b|12b)", 2),
+]
 
 
 def fetch_models():
@@ -65,6 +122,43 @@ def should_block_cn(model_id):
     return org in BLOCKED_ORGS_CN
 
 
+def _extract_param_billions(text):
+    """Best-effort extraction of total parameter count from an id/name.
+
+    Returns float billions, or None if nothing matched.
+    Handles things like '70b', '8b', '1.2b', '120b-a12b' (returns 120),
+    '480b-a35b' (returns 480), '405b' (returns 405).
+    """
+    if not text:
+        return None
+    # Prefer total-params before the "-a{active}" suffix (MoE).
+    # e.g. '120b-a12b' → 120, '480b-a35b' → 480
+    m = re.search(r"(\d+(?:\.\d+)?)\s*b(?=[-_]?a\d|\b|$)", text, re.IGNORECASE)
+    if m:
+        try:
+            return float(m.group(1))
+        except ValueError:
+            pass
+    return None
+
+
+def strength_key(model):
+    """Sort key: (tier, -params_b, -context_length, id). Lower = stronger."""
+    mid = (model.get("id") or "").lower()
+    name = (model.get("name") or "").lower()
+    org = mid.split("/", 1)[0] if "/" in mid else mid
+
+    tier = TIER_BY_ORG.get(org, 3)  # unknown orgs → tier 3
+    for pat, delta in TIER_HINTS:
+        if re.search(pat, mid) or re.search(pat, name):
+            tier = max(0, tier + delta)
+            break  # one hint wins; the first match in order
+
+    params_b = _extract_param_billions(mid) or _extract_param_billions(name) or 0.0
+    ctx = model.get("context_length") or 0
+    return (tier, -params_b, -ctx, mid)
+
+
 def main():
     print("Fetching models from OpenRouter...")
     try:
@@ -88,33 +182,58 @@ def main():
         else:
             cn_free.append(info)
 
-    # Sort by context_length descending, then by id for stability
-    global_free.sort(key=lambda x: (-(x["context_length"] or 0), x["id"]))
-    cn_free.sort(key=lambda x: (-(x["context_length"] or 0), x["id"]))
+    # --- Sort by context length (existing behaviour) ---------------------
+    by_ctx_g = sorted(global_free, key=lambda x: (-(x["context_length"] or 0), x["id"]))
+    by_ctx_c = sorted(cn_free, key=lambda x: (-(x["context_length"] or 0), x["id"]))
+
+    # --- Sort strongest -> weakest (new) ---------------------------------
+    by_strength_g = sorted(global_free, key=strength_key)
+    by_strength_c = sorted(cn_free, key=strength_key)
 
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    result_g = {
+
+    payload_g = {
         "version": "1.0",
         "updated": now,
-        "count": len(global_free),
-        "models": global_free,
+        "count": len(by_ctx_g),
+        "models": by_ctx_g,
     }
-    result_c = {
+    payload_c = {
         "version": "1.0",
         "updated": now,
-        "count": len(cn_free),
+        "count": len(by_ctx_c),
         "blocked_orgs": sorted(BLOCKED_ORGS_CN),
         "blocked_ids": sorted(blocked_ids),
-        "models": cn_free,
+        "models": by_ctx_c,
+    }
+    payload_sg = {
+        "version": "1.0",
+        "updated": now,
+        "count": len(by_strength_g),
+        "models": by_strength_g,
+    }
+    payload_sc = {
+        "version": "1.0",
+        "updated": now,
+        "count": len(by_strength_c),
+        "blocked_orgs": sorted(BLOCKED_ORGS_CN),
+        "blocked_ids": sorted(blocked_ids),
+        "models": by_strength_c,
     }
 
-    OUT_GLOBAL.write_text(json.dumps(result_g, ensure_ascii=False, indent=2) + "\n",
-                          encoding="utf-8")
-    OUT_CN.write_text(json.dumps(result_c, ensure_ascii=False, indent=2) + "\n",
-                      encoding="utf-8")
+    for path, payload in [
+        (OUT_GLOBAL, payload_g),
+        (OUT_CN, payload_c),
+        (OUT_STRONG_GLOBAL, payload_sg),
+        (OUT_STRONG_CN, payload_sc),
+    ]:
+        path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+                        encoding="utf-8")
 
-    print(f"global: {len(global_free)} models -> {OUT_GLOBAL}")
-    print(f"cn:     {len(cn_free)} models -> {OUT_CN}")
+    print(f"global:        {len(by_ctx_g)} models -> {OUT_GLOBAL}")
+    print(f"cn:            {len(by_ctx_c)} models -> {OUT_CN}")
+    print(f"strong-global: {len(by_strength_g)} models -> {OUT_STRONG_GLOBAL}")
+    print(f"strong-cn:     {len(by_strength_c)} models -> {OUT_STRONG_CN}")
     return 0
 
 
