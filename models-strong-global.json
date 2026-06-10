@@ -1,7 +1,7 @@
 {
   "version": "1.0",
-  "updated": "2026-06-09T15:02:13Z",
-  "count": 28,
+  "updated": "2026-06-10T04:00:04Z",
+  "count": 27,
   "models": [
     {
       "id": "qwen/qwen3-coder:free",
@@ -26,14 +26,6 @@
       "input_modalities": [
         "text",
         "image"
-      ]
-    },
-    {
-      "id": "z-ai/glm-4.5-air:free",
-      "name": "Z.ai: GLM 4.5 Air (free)",
-      "context_length": 131072,
-      "input_modalities": [
-        "text"
       ]
     },
     {
