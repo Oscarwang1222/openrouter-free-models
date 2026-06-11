@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 """
 Fetch OpenRouter free models and generate:
-  - models-global.json      (free models, sorted by context length)
-  - models-cn.json          (free models accessible from CN, sorted by context length)
+  - models-global.json         (free models, sorted by context length)
   - models-strong-global.json  (free models, sorted strongest -> weakest)
-  - models-strong-cn.json      (free models accessible from CN, sorted strongest -> weakest)
 
 Output format matches Oscarwang1222/openrouter-free-models repo schema:
   { "version": "1.0", "updated": "...", "count": N, "models": [ ... ] }
@@ -23,18 +21,7 @@ from pathlib import Path
 URL = "https://openrouter.ai/api/v1/models"
 OUT_DIR = Path(__file__).resolve().parent
 OUT_GLOBAL = OUT_DIR / "models-global.json"
-OUT_CN = OUT_DIR / "models-cn.json"
 OUT_STRONG_GLOBAL = OUT_DIR / "models-strong-global.json"
-OUT_STRONG_CN = OUT_DIR / "models-strong-cn.json"
-
-# Vendors excluded from the CN list. Conservative — when in doubt, drop
-# the model from the CN list and let the user decide whether to trust it.
-BLOCKED_ORGS_CN = {
-    "google", "openai", "anthropic", "anthropic/",
-    "google/", "openai/", "anyscale", "replicate",
-    "cohere", "mistralai", "meta-llama", "ai21", "stabilityai",
-    "azure", "amazon", "x-ai", "x.ai",
-}
 
 # --- Strength ranking (heuristic; lower tier = stronger) -----------------
 # Tier 0: frontier-grade open weights (DeepSeek flagship, Qwen flagship,
@@ -117,11 +104,6 @@ def model_info(m):
     }
 
 
-def should_block_cn(model_id):
-    org = model_id.lower().split("/", 1)[0] if "/" in model_id else model_id.lower()
-    return org in BLOCKED_ORGS_CN
-
-
 def _extract_param_billions(text):
     """Best-effort extraction of total parameter count from an id/name.
 
@@ -168,72 +150,41 @@ def main():
         return 1
     print(f"Total models fetched: {len(all_models)}")
 
-    global_free = []
-    cn_free = []
-    blocked_ids = set()
-
+    free = []
     for m in all_models:
-        if not is_free(m):
-            continue
-        info = model_info(m)
-        global_free.append(info)
-        if should_block_cn(m.get("id", "")):
-            blocked_ids.add(m["id"])
-        else:
-            cn_free.append(info)
+        if is_free(m):
+            free.append(model_info(m))
 
-    # --- Sort by context length (existing behaviour) ---------------------
-    by_ctx_g = sorted(global_free, key=lambda x: (-(x["context_length"] or 0), x["id"]))
-    by_ctx_c = sorted(cn_free, key=lambda x: (-(x["context_length"] or 0), x["id"]))
+    # --- Sort by context length -------------------------------------------
+    by_ctx = sorted(free, key=lambda x: (-(x["context_length"] or 0), x["id"]))
 
-    # --- Sort strongest -> weakest (new) ---------------------------------
-    by_strength_g = sorted(global_free, key=strength_key)
-    by_strength_c = sorted(cn_free, key=strength_key)
+    # --- Sort strongest -> weakest ----------------------------------------
+    by_strength = sorted(free, key=strength_key)
 
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
-    payload_g = {
+    payload_ctx = {
         "version": "1.0",
         "updated": now,
-        "count": len(by_ctx_g),
-        "models": by_ctx_g,
+        "count": len(by_ctx),
+        "models": by_ctx,
     }
-    payload_c = {
+    payload_strong = {
         "version": "1.0",
         "updated": now,
-        "count": len(by_ctx_c),
-        "blocked_orgs": sorted(BLOCKED_ORGS_CN),
-        "blocked_ids": sorted(blocked_ids),
-        "models": by_ctx_c,
-    }
-    payload_sg = {
-        "version": "1.0",
-        "updated": now,
-        "count": len(by_strength_g),
-        "models": by_strength_g,
-    }
-    payload_sc = {
-        "version": "1.0",
-        "updated": now,
-        "count": len(by_strength_c),
-        "blocked_orgs": sorted(BLOCKED_ORGS_CN),
-        "blocked_ids": sorted(blocked_ids),
-        "models": by_strength_c,
+        "count": len(by_strength),
+        "models": by_strength,
     }
 
     for path, payload in [
-        (OUT_GLOBAL, payload_g),
-        (OUT_CN, payload_c),
-        (OUT_STRONG_GLOBAL, payload_sg),
-        (OUT_STRONG_CN, payload_sc),
+        (OUT_GLOBAL, payload_ctx),
+        (OUT_STRONG_GLOBAL, payload_strong),
     ]:
         path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
                         encoding="utf-8")
 
-    print(f"global:        {len(by_ctx_g)} models -> {OUT_GLOBAL}")
-    print(f"cn:            {len(by_ctx_c)} models -> {OUT_CN}")
-    print(f"strong-global: {len(by_strength_g)} models -> {OUT_STRONG_GLOBAL}")
-    print(f"strong-cn:     {len(by_strength_c)} models -> {OUT_STRONG_CN}")
+    print(f"global:        {len(by_ctx)} models -> {OUT_GLOBAL}")
+    print(f"strong-global: {len(by_strength)} models -> {OUT_STRONG_GLOBAL}")
     return 0
 
 

@@ -7,9 +7,7 @@
 | 文件 | 排序方式 | 说明 |
 |------|---------|------|
 | `models-global.json` | context 长度 | 所有免费模型（Prompt 价格 = 0） |
-| `models-cn.json` | context 长度 | 国内可访问的免费模型（已移除 Google/OpenAI/Anthropic 等） |
 | `models-strong-global.json` | 强 → 弱 | 同上，按能力强弱排序 |
-| `models-strong-cn.json` | 强 → 弱 | 同上，按能力强弱排序 |
 | `fetch_models.py` | — | 数据抓取脚本（供 cron 调用） |
 
 ## 强→弱排序规则（厂商分层 + 参数估算 + 上下文兜底）
@@ -25,10 +23,6 @@
 2. **同 tier 内**：从 id/name 提取 `Nb`（支持 MoE 写法 `120b-a12b` 取总参 120），从大到小
 3. **同参数量**：context_length 兜底
 4. 最后按 id 保稳定
-
-## models-cn.json 排除的机构
-
-`google`, `openai`, `anthropic`, `google/`, `openai/`, `anyscale`, `replicate`, `cohere`, `mistralai`, `meta-llama`, `ai21`, `stabilityai`, `azure`, `amazon`, `x-ai`, `x.ai`
 
 ## 数据结构
 
@@ -55,7 +49,7 @@
 如需手动更新：
 ```bash
 python3 fetch_models.py
-git add models-global.json models-cn.json models-strong-global.json models-strong-cn.json
+git add models-global.json models-strong-global.json
 git commit -m "Update free models $(date +%Y-%m-%d)"
 git push
 ```
