@@ -8,7 +8,11 @@
 |------|---------|------|
 | `models-global.json` | context 长度 | 所有免费模型（Prompt 价格 = 0） |
 | `models-strong-global.json` | 强 → 弱 | 同上，按能力强弱排序 |
+| `models-cn.json` | context 长度 | **CN 版**：剔除 google / openai / anthropic |
+| `models-strong-cn.json` | 强 → 弱 | **CN 版**：同上，剔除同上三家 |
 | `fetch_models.py` | — | 数据抓取脚本（供 cron 调用） |
+
+> CN 版的剔除列表维护在 `fetch_models.py` 顶部的 `CN_BLOCKED_ORGS` 常量。
 
 ## 强→弱排序规则（厂商分层 + 参数估算 + 上下文兜底）
 

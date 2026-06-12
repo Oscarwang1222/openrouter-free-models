@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
-Fetch OpenRouter free models and generate:
-  - models-global.json         (free models, sorted by context length)
-  - models-strong-global.json  (free models, sorted strongest -> weakest)
+Fetch OpenRouter free models and generate four files:
+  - models-global.json         (free models, all orgs, sorted by context length)
+  - models-strong-global.json  (free models, all orgs, sorted strongest -> weakest)
+  - models-cn.json             (CN edition: google/openai/anthropic excluded)
+  - models-strong-cn.json      (CN edition: google/openai/anthropic excluded)
 
 Output format matches Oscarwang1222/openrouter-free-models repo schema:
   { "version": "1.0", "updated": "...", "count": N, "models": [ ... ] }
@@ -22,6 +24,12 @@ URL = "https://openrouter.ai/api/v1/models"
 OUT_DIR = Path(__file__).resolve().parent
 OUT_GLOBAL = OUT_DIR / "models-global.json"
 OUT_STRONG_GLOBAL = OUT_DIR / "models-strong-global.json"
+OUT_CN = OUT_DIR / "models-cn.json"
+OUT_STRONG_CN = OUT_DIR / "models-strong-cn.json"
+
+# Vendors excluded from the CN edition — typically blocked or unreachable
+# from mainland China networks. Update here if the block list changes.
+CN_BLOCKED_ORGS = {"google", "openai", "anthropic"}
 
 # --- Strength ranking (heuristic; lower tier = stronger) -----------------
 # Tier 0: frontier-grade open weights (DeepSeek flagship, Qwen flagship,
@@ -155,36 +163,41 @@ def main():
         if is_free(m):
             free.append(model_info(m))
 
+    # CN edition: drop vendors that are typically blocked / unreachable
+    # from mainland China networks.
+    cn = [m for m in free if m["id"].split("/", 1)[0] not in CN_BLOCKED_ORGS]
+
     # --- Sort by context length -------------------------------------------
     by_ctx = sorted(free, key=lambda x: (-(x["context_length"] or 0), x["id"]))
+    by_ctx_cn = sorted(cn, key=lambda x: (-(x["context_length"] or 0), x["id"]))
 
     # --- Sort strongest -> weakest ----------------------------------------
     by_strength = sorted(free, key=strength_key)
+    by_strength_cn = sorted(cn, key=strength_key)
 
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
-    payload_ctx = {
-        "version": "1.0",
-        "updated": now,
-        "count": len(by_ctx),
-        "models": by_ctx,
-    }
-    payload_strong = {
-        "version": "1.0",
-        "updated": now,
-        "count": len(by_strength),
-        "models": by_strength,
-    }
+    def _payload(models):
+        return {
+            "version": "1.0",
+            "updated": now,
+            "count": len(models),
+            "models": models,
+        }
 
-    for path, payload in [
-        (OUT_GLOBAL, payload_ctx),
-        (OUT_STRONG_GLOBAL, payload_strong),
+    for path, models in [
+        (OUT_GLOBAL, by_ctx),
+        (OUT_STRONG_GLOBAL, by_strength),
+        (OUT_CN, by_ctx_cn),
+        (OUT_STRONG_CN, by_strength_cn),
     ]:
-        path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        path.write_text(json.dumps(_payload(models), ensure_ascii=False, indent=2) + "\n",
                         encoding="utf-8")
 
     print(f"global:        {len(by_ctx)} models -> {OUT_GLOBAL}")
     print(f"strong-global: {len(by_strength)} models -> {OUT_STRONG_GLOBAL}")
+    print(f"cn:            {len(by_ctx_cn)} models -> {OUT_CN} (excluded: {sorted(CN_BLOCKED_ORGS)})")
+    print(f"strong-cn:     {len(by_strength_cn)} models -> {OUT_STRONG_CN}")
     return 0
 
 
