@@ -1,7 +1,7 @@
 {
   "version": "1.0",
-  "updated": "2026-06-17T04:00:24Z",
-  "count": 20,
+  "updated": "2026-06-18T04:00:33Z",
+  "count": 21,
   "models": [
     {
       "id": "qwen/qwen3-coder:free",
@@ -117,6 +117,14 @@
       "id": "nvidia/nemotron-nano-9b-v2:free",
       "name": "NVIDIA: Nemotron Nano 9B V2 (free)",
       "context_length": 128000,
+      "input_modalities": [
+        "text"
+      ]
+    },
+    {
+      "id": "cohere/north-mini-code:free",
+      "name": "Cohere: North Mini Code (free)",
+      "context_length": 256000,
       "input_modalities": [
         "text"
       ]

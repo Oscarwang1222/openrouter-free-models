@@ -1,7 +1,7 @@
 {
   "version": "1.0",
-  "updated": "2026-06-17T04:00:24Z",
-  "count": 26,
+  "updated": "2026-06-18T04:00:33Z",
+  "count": 27,
   "models": [
     {
       "id": "qwen/qwen3-coder:free",
@@ -173,6 +173,14 @@
       "input_modalities": [
         "text",
         "image"
+      ]
+    },
+    {
+      "id": "cohere/north-mini-code:free",
+      "name": "Cohere: North Mini Code (free)",
+      "context_length": 256000,
+      "input_modalities": [
+        "text"
       ]
     },
     {

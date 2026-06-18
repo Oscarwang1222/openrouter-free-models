@@ -1,7 +1,7 @@
 {
   "version": "1.0",
-  "updated": "2026-06-17T04:00:24Z",
-  "count": 20,
+  "updated": "2026-06-18T04:00:33Z",
+  "count": 21,
   "models": [
     {
       "id": "openrouter/owl-alpha",
@@ -64,6 +64,14 @@
       "id": "qwen/qwen3-next-80b-a3b-instruct:free",
       "name": "Qwen: Qwen3 Next 80B A3B Instruct (free)",
       "context_length": 262144,
+      "input_modalities": [
+        "text"
+      ]
+    },
+    {
+      "id": "cohere/north-mini-code:free",
+      "name": "Cohere: North Mini Code (free)",
+      "context_length": 256000,
       "input_modalities": [
         "text"
       ]
