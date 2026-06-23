@@ -1,7 +1,7 @@
 {
   "version": "1.0",
-  "updated": "2026-06-22T04:00:53Z",
-  "count": 27,
+  "updated": "2026-06-23T04:00:59Z",
+  "count": 26,
   "models": [
     {
       "id": "openrouter/owl-alpha",
@@ -71,15 +71,6 @@
         "image",
         "text",
         "video"
-      ]
-    },
-    {
-      "id": "nex-agi/nex-n2-pro:free",
-      "name": "Nex AGI: Nex-N2-Pro (free)",
-      "context_length": 262144,
-      "input_modalities": [
-        "text",
-        "image"
       ]
     },
     {
