@@ -1,16 +1,8 @@
 {
   "version": "1.0",
-  "updated": "2026-06-30T04:00:30Z",
-  "count": 26,
+  "updated": "2026-07-01T04:01:07Z",
+  "count": 25,
   "models": [
-    {
-      "id": "openrouter/owl-alpha",
-      "name": "Owl Alpha",
-      "context_length": 1048756,
-      "input_modalities": [
-        "text"
-      ]
-    },
     {
       "id": "google/lyria-3-clip-preview",
       "name": "Google: Lyria 3 Clip Preview",
