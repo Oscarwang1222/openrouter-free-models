@@ -1,7 +1,7 @@
 {
   "version": "1.0",
-  "updated": "2026-07-02T04:00:09Z",
-  "count": 25,
+  "updated": "2026-07-03T04:00:48Z",
+  "count": 26,
   "models": [
     {
       "id": "google/lyria-3-clip-preview",
@@ -68,6 +68,14 @@
     {
       "id": "poolside/laguna-m.1:free",
       "name": "Poolside: Laguna M.1 (free)",
+      "context_length": 262144,
+      "input_modalities": [
+        "text"
+      ]
+    },
+    {
+      "id": "poolside/laguna-xs-2.1:free",
+      "name": "Poolside: Laguna XS 2.1 (free)",
       "context_length": 262144,
       "input_modalities": [
         "text"
